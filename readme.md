@@ -1,13 +1,13 @@
-# rollup-typescript-starter-lib
+# spritesheet
 
-[![test](https://github.com/solaldr/rollup-typescript-starter-lib/workflows/test/badge.svg?branch=master)](https://github.com/solaldr/rollup-typescript-starter-lib/actions?workflow=test)
-[![build](https://github.com/solaldr/rollup-typescript-starter-lib/workflows/build/badge.svg?branch=master)](https://github.com/solaldr/rollup-typescript-starter-lib/actions?workflow=build)
-[![version](https://img.shields.io/github/package-json/v/solaldr/rollup-typescript-starter-lib)](https://github.com/solaldr/rollup-typescript-starter-lib)
+[![test](https://github.com/SolalDR/spritesheet/workflows/test/badge.svg?branch=master)](https://github.com/SolalDR/spritesheet/actions?workflow=test)
+[![build](https://github.com/SolalDR/spritesheet/workflows/build/badge.svg?branch=master)](https://github.com/SolalDR/spritesheet/actions?workflow=build)
+[![version](https://img.shields.io/github/package-json/v/SolalDR/spritesheet)](https://github.com/SolalDR/spritesheet)
 
 Library starter based on rollup and typescript. <br>
 Inspired by <a href="https://github.com/juliendargelos/rollup-library">https://github.com/juliendargelos/rollup-library</a>
 
-<sub>[![Use this template](https://img.shields.io/badge/-Use%20this%20template-brightgreen)](https://github.com/solaldr/rollup-typescript-starter-lib/generate)</sub>
+<sub>[![Use this template](https://img.shields.io/badge/-Use%20this%20template-brightgreen)](https://github.com/SolalDR/spritesheet/generate)</sub>
 
 ## How to contribute
 
