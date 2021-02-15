@@ -1,4 +1,4 @@
-import { ImageSet } from "./image-set"
+import { ImageSet } from './image-set'
 
 export interface ChunkOptions {
   width: number | null
@@ -19,6 +19,6 @@ export interface CLISpritesheetConfig {
 }
 
 export interface CLIOutputConfig {
-  name: string,
-  dir: string 
+  name: string
+  dir: string
 }

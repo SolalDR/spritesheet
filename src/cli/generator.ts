@@ -21,12 +21,20 @@ export class Generator {
   height: number
   output: CLIOutputConfig
   chunkConfig: CLIChunkConfig
-  constructor({ width, height, output, imageSets, chunkConfig }: GeneratorOptions) {
+  constructor({
+    width,
+    height,
+    output,
+    imageSets,
+    chunkConfig,
+  }: GeneratorOptions) {
     this.width = width
     this.height = height
     this.chunkConfig = chunkConfig
-    this.imageSets = (imageSets as any[])
-      .map((set): ImageSet => (set instanceof ImageSet ? set : new ImageSet(set)) as ImageSet)
+    this.imageSets = (imageSets as any[]).map(
+      (set): ImageSet =>
+        (set instanceof ImageSet ? set : new ImageSet(set)) as ImageSet,
+    )
     this.output = output
   }
 
@@ -35,14 +43,16 @@ export class Generator {
   }
 
   get directory(): string {
-    return this.output.dir.slice(-1) !== '/' ? this.output.dir + '/' : this.output.dir
+    return this.output.dir.slice(-1) !== '/'
+      ? this.output.dir + '/'
+      : this.output.dir
   }
 
-  processGrid({ 
+  processGrid({
     width = this.width,
     height = this.height,
     imageSet = null,
-    loss = 0
+    loss = 0,
   }) {
     if (!imageSet) return null
     const images = imageSet.images
@@ -52,13 +62,18 @@ export class Generator {
     const computeTotalPixelUse = () => {
       return chunks.reduce((acc, value) => acc + value.width * value.height, 0)
     }
-  
+
     const computeBoundaries = () => {
-      return chunks.reduce((acc, value) => {
-        if (value.coords.x + value.width > acc.x) acc.x = value.coords.x + value.width
-        if (value.coords.y + value.height > acc.y) acc.y = value.coords.y + value.height
-        return acc
-      }, {x: 0, y: 0})
+      return chunks.reduce(
+        (acc, value) => {
+          if (value.coords.x + value.width > acc.x)
+            acc.x = value.coords.x + value.width
+          if (value.coords.y + value.height > acc.y)
+            acc.y = value.coords.y + value.height
+          return acc
+        },
+        { x: 0, y: 0 },
+      )
     }
 
     /**
@@ -66,34 +81,48 @@ export class Generator {
      */
     const filterAnchorPoints = () => {
       anchorPoints = anchorPoints.filter(point => {
-        const conflictedChunk = chunks.find(chunk => (
-          point.x >= chunk.coords.x && point.x < chunk.coords.x + chunk.width
-          && point.y >= chunk.coords.y && point.y < chunk.coords.y + chunk.height
-        ))
+        const conflictedChunk = chunks.find(
+          chunk =>
+            point.x >= chunk.coords.x &&
+            point.x < chunk.coords.x + chunk.width &&
+            point.y >= chunk.coords.y &&
+            point.y < chunk.coords.y + chunk.height,
+        )
         if (conflictedChunk) return false
         return true
       })
     }
 
-    const attributeLocation = (image) => {
-      // Filter the anchor points no longer available 
+    const attributeLocation = image => {
+      // Filter the anchor points no longer available
       filterAnchorPoints()
 
       // Filter for anchor points inside boundaries
-      const possibleAnchorPoints = anchorPoints.filter((point) => 
-        (point.x + image.width < width && point.y + image.height < height)
+      const possibleAnchorPoints = anchorPoints.filter(
+        point =>
+          point.x + image.width < width && point.y + image.height < height,
       )
-      if (possibleAnchorPoints.length === 0) throw new Error("Cannot find space for image")
+      if (possibleAnchorPoints.length === 0)
+        throw new Error('Cannot find space for image')
 
-      const anchorPoint = possibleAnchorPoints.reduce((acc: any, value: any) => {
-        const farestCurrentValue = Math.max(value.x + image.width, value.y + image.height)
-        const farestAccValue = Math.max(acc.x + image.width, acc.y + image.height)
-        if(farestCurrentValue < farestAccValue) {
-          return value
-        }
-        return acc
-      }, {x: width, y: height})
-      
+      const anchorPoint = possibleAnchorPoints.reduce(
+        (acc: any, value: any) => {
+          const farestCurrentValue = Math.max(
+            value.x + image.width,
+            value.y + image.height,
+          )
+          const farestAccValue = Math.max(
+            acc.x + image.width,
+            acc.y + image.height,
+          )
+          if (farestCurrentValue < farestAccValue) {
+            return value
+          }
+          return acc
+        },
+        { x: width, y: height },
+      )
+
       if (anchorPoint) {
         // remove attributed anchor point
         const index = anchorPoints.findIndex(point => {
@@ -101,11 +130,14 @@ export class Generator {
         })
 
         anchorPoints.splice(index, 1)
-        anchorPoints.push({x: anchorPoint.x + image.width, y: anchorPoint.y }, {x: anchorPoint.x, y: anchorPoint.y + image.height })
-    
-        return anchorPoint;
+        anchorPoints.push(
+          { x: anchorPoint.x + image.width, y: anchorPoint.y },
+          { x: anchorPoint.x, y: anchorPoint.y + image.height },
+        )
+
+        return anchorPoint
       }
-      throw new Error("Cannot find space for image")
+      throw new Error('Cannot find space for image')
     }
 
     images.forEach((image, i) => {
@@ -116,20 +148,20 @@ export class Generator {
       // console.log(image.chunk.width)
 
       const coords = attributeLocation({ width, height })
-      chunks.push({ 
+      chunks.push({
         image,
         height,
         width,
         ratio,
-        coords
+        coords,
       })
     })
-    
+
     return {
       chunks,
       totalPixel: computeTotalPixelUse(),
       boundaries: computeBoundaries(),
-      loss: 1 - (computeTotalPixelUse() / (width * height))
+      loss: 1 - computeTotalPixelUse() / (width * height),
     }
   }
 
@@ -142,88 +174,94 @@ export class Generator {
 
   computeGrid() {
     let grid = null
-    try { 
+    try {
       const g = this.processGrid({
         width: this.width,
-        height: this.height, 
+        height: this.height,
         loss: 0,
-        imageSet: this.imageSets[0]
-      });
+        imageSet: this.imageSets[0],
+      })
       if (g) grid = g
     } catch (err) {}
-    
-    
+
     const resize = this.resizeFactor
-    for (let i=-resize; i<resize; i += 0.01) {
+    for (let i = -resize; i < resize; i += 0.01) {
       try {
         const g = this.processGrid({
           width: this.width,
           height: this.height,
           loss: i,
-          imageSet: this.imageSets[0]
+          imageSet: this.imageSets[0],
         })
         if (g) {
           if (!grid || grid.loss > g.loss) grid = g
         }
-      } catch(err) {}
+      } catch (err) {}
     }
 
     return grid
   }
 
   async generateMetadata(grid) {
-    
-    const datas = grid.chunks.map(({width, height, coords}, index) => {
+    const datas = grid.chunks.map(({ width, height, coords }, index) => {
       return {
         width,
         height,
         top: coords.y,
-        left: coords.x, 
-        rank: index
+        left: coords.x,
+        rank: index,
       }
     })
 
-    const stringData = JSON.stringify(datas);
+    const stringData = JSON.stringify(datas)
     await fs.writeFile(`${this.directory}${this.name}.json`, stringData)
   }
 
   async generateSprite(grid) {
-    const composites = await Promise.all(grid.chunks.map(async chunk => {
-      const buffer = await chunk.image.sharp.resize(chunk.width, chunk.height).toBuffer()
-      return {
-        input: buffer,
-        top: chunk.coords.y,
-        left: chunk.coords.x,
-      }  
-    }))
+    const composites = await Promise.all(
+      grid.chunks.map(async chunk => {
+        const buffer = await chunk.image.sharp
+          .resize(chunk.width, chunk.height)
+          .toBuffer()
+        return {
+          input: buffer,
+          top: chunk.coords.y,
+          left: chunk.coords.x,
+        }
+      }),
+    )
 
     try {
       sharp({
         create: {
           width: this.width,
-          height: this.height, 
+          height: this.height,
           channels: 4,
-          background: { r: 0, g: 0, b: 0, alpha: 0 }
-        }
+          background: { r: 0, g: 0, b: 0, alpha: 0 },
+        },
       })
-      .composite(composites)
-      .sharpen()
-      .withMetadata()
-      .png( { quality: 90 } )
-      .toFile(`${this.directory}${this.name}.png`, (err) => {
-        if (err) {
-          errorLog('File generation', err)
-        } else {
-          successLog('Files generated successfully', '', `- ${this.name}.png\n- ${this.name}.json`)
-        }
-      })    
+        .composite(composites)
+        .sharpen()
+        .withMetadata()
+        .png({ quality: 90 })
+        .toFile(`${this.directory}${this.name}.png`, err => {
+          if (err) {
+            errorLog('File generation', err)
+          } else {
+            successLog(
+              'Files generated successfully',
+              '',
+              `- ${this.name}.png\n- ${this.name}.json`,
+            )
+          }
+        })
     } catch (err) {
       console.log(err)
     }
   }
 
   get chunkSize() {
-    let size = ""
+    let size = ''
     size += this.chunkConfig.width ? `${this.chunkConfig.width}x` : `?x`
     size += this.chunkConfig.height ? `${this.chunkConfig.height}` : `?`
     if (size === '?x?') return 'auto'
@@ -232,7 +270,9 @@ export class Generator {
 
   get chunkResize() {
     if (this.chunkSize === 'auto' && !this.chunkConfig.resize) return 'auto'
-    return this.chunkConfig.resize ? this.chunkConfig.resize*100 + '%' : 'none'
+    return this.chunkConfig.resize
+      ? this.chunkConfig.resize * 100 + '%'
+      : 'none'
   }
 
   async run() {
@@ -242,11 +282,14 @@ export class Generator {
     })
 
     actionLog(
-      'Grid will be generated ', '',
-      `- spritesheet dimension: ${this.width}x${this.height}px\n` + 
-      `- chunk size: ${this.chunkSize}\n` + 
-      `- resize: ${this.chunkConfig.resize ? this.chunkConfig.resize*100 + '%' : 'auto'}\n` + 
-      `- output path : ${this.directory}${this.name}.(png|json)\n`
+      'Grid will be generated ',
+      '',
+      `- spritesheet dimension: ${this.width}x${this.height}px\n` +
+        `- chunk size: ${this.chunkSize}\n` +
+        `- resize: ${
+          this.chunkConfig.resize ? this.chunkConfig.resize * 100 + '%' : 'auto'
+        }\n` +
+        `- output path : ${this.directory}${this.name}.(png|json)\n`,
     )
 
     const grid = this.computeGrid()
@@ -256,24 +299,35 @@ export class Generator {
     }
 
     actionLog(
-      'Grid has been generated ', '',
-      `- Blank space ${~~(grid.loss * 100)}%\n- Boundaries: [${grid.boundaries.x}, ${grid.boundaries.y}]\n- Number of items : ${grid.chunks.length}`
+      'Grid has been generated ',
+      '',
+      `- Blank space ${~~(grid.loss * 100)}%\n- Boundaries: [${
+        grid.boundaries.x
+      }, ${grid.boundaries.y}]\n- Number of items : ${grid.chunks.length}`,
     )
-    if (grid.boundaries.x < this.width * 0.75 && grid.boundaries.y < this.height * 0.75) {
+    if (
+      grid.boundaries.x < this.width * 0.75 &&
+      grid.boundaries.y < this.height * 0.75
+    ) {
       warningLog(
-        'Generation', 
-        `There is a lot of blank space in the spritesheet, consider changing resolution of either chunk or spritesheet `
+        'Generation',
+        `There is a lot of blank space in the spritesheet, consider changing resolution of either chunk or spritesheet `,
       )
     }
 
     if (!grid) {
-      errorLog('Generation', 'Cannot generate grid', 'try decrease chunk width or increase spritesheet dimension')
+      errorLog(
+        'Generation',
+        'Cannot generate grid',
+        'try decrease chunk width or increase spritesheet dimension',
+      )
       process.exit()
     }
 
     actionLog(
-      'Start generation ', '',
-      `This operation can take some time to complete`
+      'Start generation ',
+      '',
+      `This operation can take some time to complete`,
     )
 
     await this.generateMetadata(grid)
@@ -281,23 +335,21 @@ export class Generator {
   }
 }
 
-
 // Feature CLI generate
 
 // - open a list of image
 // - crop / resize these image
 
-// - generate a map from a liste of image 
+// - generate a map from a liste of image
 //   - before
 //     - crop image
 //   - parameters
-//     - image chunk size 
+//     - image chunk size
 //     - spritesheet size
-//   - after 
+//   - after
 //     - compress
 
 // - generate data for json file
-
 
 // "spritesheet generate --cw 400 --ch 1024 --w 4096 --c 50 --d ./my-images/"
 // "spritesheet generate ./my-images/**.png"

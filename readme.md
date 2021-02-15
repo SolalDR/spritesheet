@@ -11,14 +11,16 @@ Basic use :
 spritesheet generate --dir ./myimagesdir --w 4096 --c.w 512 --c.h 512 --o walk
 ```
 
-| option                                                 | description                                |
-|--------------------------------------------------------|--------------------------------------------|
-| `--spritesheet.width`, `--s.width`, `--w`, `--width`   | Width of the output spritesheet file       |
-| `--spritesheet.width`, `--s.height`, `--h`, `--height` | Height of the output spritesheet file      |
-| `--chunk.width`, `--c.width`                           | Width of a single chunk                    |
-| `--chunk.height`, `--c.height`                         | Height of a single chunk                   |
-| `--output`, `--o`                                      | Output name of the spritesheet             |
-| `--dir`                                                | Path to parent directory of target images  |
+| option                                                 |type| description                                |default|
+|--------------------------------------------------------|--|--------------------------------------------|-----------
+| `--spritesheet.width`, `--s.width`, `--w`, `--width`   |number| Width of the output spritesheet file       |`2048`
+| `--spritesheet.width`, `--s.height`, `--h`, `--height` |number| Height of the output spritesheet file      |`2048`
+| `--chunk.width`, `--c.width`                           |number| Width of a single chunk                    |`auto` (spread amoung disponible space)
+| `--chunk.height`, `--c.height`                         |number| Height of a single chunk                   |`auto` (spread amoung disponible space)
+| `--chunk.resize`, `--c.resize`                         |number| Resize factor of a chunk                   |`auto` (spread amoung disponible space)
+| `--output.name`, `--o.name`                            |string| Output name of the spritesheet             |`spritesheet`
+| `--output.dir`, `--o.dir`                              |string| Output directory of the spritesheet        |`./`
+| `--dir`                                                |string| Path to parent directory of target images  |
 
 ## How to contribute
 

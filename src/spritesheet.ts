@@ -1,13 +1,13 @@
 export interface Chunk {
-  rank: number;
-  x: number;
-  y: number;
+  rank: number
+  x: number
+  y: number
 }
 
 export interface SpriteSet {
-  width: number,
-  height: number,
-  name: 'walk',
+  width: number
+  height: number
+  name: 'walk'
   chunks: Chunk[]
 }
 
@@ -33,6 +33,6 @@ export class Spritesheet {
 //   width: 4096,
 //   height: 4096,
 //   sets: {
-    
+
 //   }
 // }

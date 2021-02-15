@@ -1,6 +1,6 @@
 interface ImageChunkOptions {
-  image: Buffer,
-  width: number,
+  image: Buffer
+  width: number
   height: number
 }
 
@@ -9,11 +9,7 @@ export class ImageChunk {
   width: number
   height: number
 
-  constructor({
-    image,
-    width,
-    height
-  }) {
+  constructor({ image, width, height }) {
     this.image = image
     this.width = width
     this.height = height

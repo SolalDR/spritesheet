@@ -1,10 +1,10 @@
-import { ChunkOptions } from "./interfaces"
+import { ChunkOptions } from './interfaces'
 
 // eslint-disable-next-line
 const sharp = require('sharp')
 
 export interface ImageSetOptions {
-  baseUrl?: string;
+  baseUrl?: string
   paths?: Array<string>
   chunk: ChunkOptions
 }
@@ -33,11 +33,7 @@ export class ImageSet {
   chunk: ChunkOptions
   status: ImageSetStatus = ImageSetStatus.PENDING
 
-  constructor({
-    baseUrl,
-    paths,
-    chunk,
-  }: ImageSetOptions) {
+  constructor({ baseUrl, paths, chunk }: ImageSetOptions) {
     this.baseUrl = baseUrl
     this.paths = paths
     this.chunk = chunk
@@ -45,21 +41,28 @@ export class ImageSet {
   }
 
   async load() {
-    if (this.status === ImageSetStatus.LOADING || this.status === ImageSetStatus.LOADED) {
-      console.error('ImageSet: Cannot load twice an image sets. ImageSet is probably already loaded or is loading.')
+    if (
+      this.status === ImageSetStatus.LOADING ||
+      this.status === ImageSetStatus.LOADED
+    ) {
+      console.error(
+        'ImageSet: Cannot load twice an image sets. ImageSet is probably already loaded or is loading.',
+      )
       return
     }
     this.status = ImageSetStatus.LOADING
-    this.images = await Promise.all(this.paths.map(async path => {
-      const sharpFile = sharp(this.baseUrl + '/' + path)
-      const metadata = await sharpFile.metadata()
+    this.images = await Promise.all(
+      this.paths.map(async path => {
+        const sharpFile = sharp(this.baseUrl + '/' + path)
+        const metadata = await sharpFile.metadata()
 
-      return {
-        sharp: sharpFile,
-        width: metadata.width,
-        height: metadata.height
-      }
-    }))
+        return {
+          sharp: sharpFile,
+          width: metadata.width,
+          height: metadata.height,
+        }
+      }),
+    )
 
     this.status = ImageSetStatus.LOADED
   }
