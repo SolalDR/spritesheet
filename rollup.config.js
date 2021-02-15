@@ -5,6 +5,9 @@ import resolve from '@rollup/plugin-node-resolve';
 import alias from '@rollup/plugin-alias';
 import commonjs from '@rollup/plugin-commonjs';
 import filesize from 'rollup-plugin-filesize';
+import json from '@rollup/plugin-json';
+import { preserveShebangs } from 'rollup-plugin-preserve-shebangs';
+
 
 import pkg from './package.json';
 import tsconfig from './tsconfig.json';
@@ -30,6 +33,7 @@ export default [
     ],
     plugins: [
       external(),
+      json(),
       ts(),
       alias({
         resolve: ['.ts', '.tsx'],
@@ -46,6 +50,7 @@ export default [
     output: { file: pkg.browser, name: 'Loader', format: 'umd' },
     plugins: [
       external(),
+      json(),
       ts(),
       alias({
         resolve: ['.ts', '.tsx'],
@@ -68,6 +73,7 @@ export default [
 		},
 		plugins: [
       external(),
+      json(),
       ts(),
       alias({
         resolve: ['.ts', '.tsx'],
@@ -79,6 +85,33 @@ export default [
       }),
       terser(),
       production && filesize(),
+			//resolve(), // so Rollup can find `ms`
+			//commonjs() // so Rollup can convert `ms` to an ES module
+		]
+  },
+  {
+		input: 'src/cli/index.ts',
+		output: {
+			name: 'spritesheet',
+			file: 'dist/cli.js',
+			format: 'umd'
+		},
+		plugins: [
+      external(),
+      json(),
+      ts(),
+      alias({
+        resolve: ['.ts', '.tsx'],
+        entries: resolveEntries(),
+      }),
+      resolve(),
+      commonjs({
+        include: ['node_modules/**'],
+      }),
+      // terser(),
+      production && filesize(),
+      preserveShebangs(),
+
 			//resolve(), // so Rollup can find `ms`
 			//commonjs() // so Rollup can convert `ms` to an ES module
 		]
