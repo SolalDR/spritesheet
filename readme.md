@@ -4,6 +4,17 @@
 [![build](https://github.com/SolalDR/spritesheet/workflows/build/badge.svg?branch=master)](https://github.com/SolalDR/spritesheet/actions?workflow=build)
 [![version](https://img.shields.io/github/package-json/v/SolalDR/spritesheet)](https://github.com/SolalDR/spritesheet)
 
+## Description
+This library is an easy and customizable way to generate optimized spritesheet through a CLI.
+
+## Features
+- [x] JSON map generation (store all the images coords)
+- [x] Fast images processing using `sharp`
+- [x] Space optimisation: optimize space in the spritesheet to store the more images possible
+- [x] Auto-resize : if there isn't enough space in the spritesheet the chunk will resize down until fit perfectly in the spritesheet
+- [x] Pass multiple input to get multiples sprites in the same texture
+- [ ] (Incomming) Multiple textures generation
+
 ## Installation
 
 ```
@@ -31,24 +42,21 @@ spritesheet --input ./myimagesdir
 ## Docs
 
 #### `--input`
-The input parameter describle the way images set will be inported.
+The input parameter describle the way images will be inported.
 
 #### `--output`
-The input parameter describle in which directory the spritesheet will be generated
+The output parameter describle in which directory the spritesheet will be generated.
 
 #### `--name`
 The name of the spritesheet `{name}.json`
 
 #### `--width`, `--w`
-Represent the width(px) of the output spritesheet. If `width` is undefined, `width` will be equal to `2048px`<br>
+Represent the width (in pixels) of the output spritesheet. If `width` is undefined, `width` will calculated automatically<br>
 Notice: A power of two is recommanded
 
 #### `--height`, `--h`
 Represent the height(px) of the output spritesheet. If `height` is undefined, `height` will be equal to the `width` value<br>
 Notice: A power of two is recommanded
-#### --multiple (TODO)
-If present, this attribute allows multiples spritesheets to be created if there is no space left. 
-A typical example is when a chunk width is forced and all item cannots fit inside the spritesheet, instead of trigger an error, it will create a second spritesheet.
 
 #### `--chunk.width`, `--c.w`
 Each image passed as an input in the CLI create a single chunk. A chunk is defined by the following properties: `width`, `height`, `x`, `y`
@@ -56,7 +64,7 @@ Represent the width of a chunk. If this parameter is undefined, the computed wid
 For instance, if a spritesheet has dimensions `2048x2048`, However the number of chunks, they will be resized automatically to fit inside this dimensions. See `--flexibility` option for more informations.
 
 #### `--chunk.height`, `--c.h`
-Represent the height of a chunk. See chunk.width behavior
+Represent the height of a chunk. See `chunk.width` behavior
 
 #### `--flexibility`
 The capacity of a chunk to resize in order to fit inside spritesheet dimensions. The parameter is ranged between 0 and 1. 
