@@ -1,4 +1,4 @@
-const sharp = require('sharp');
+const sharp = require('sharp')
 
 for (let i = 0; i < 100; i++) {
   sharp({
@@ -10,11 +10,10 @@ for (let i = 0; i < 100; i++) {
         r: 0,
         g: ~~(Math.random() * 255),
         b: ~~(Math.random() * 255),
-        alpha: 1
+        alpha: 1,
       },
     },
-  }).png().toFile(`./public/test2/${i}.png`)
+  })
+    .png()
+    .toFile(`./public/test2/${i}.png`)
 }
-
-
-

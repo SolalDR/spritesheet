@@ -1,4 +1,4 @@
-import { errorLog }  from '../helpers/log'
+import { errorLog } from '../helpers/log'
 
 export function handleFsError(error, path) {
   switch (error.errno) {

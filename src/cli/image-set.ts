@@ -1,4 +1,3 @@
-
 // eslint-disable-next-line
 const sharp = require('sharp')
 

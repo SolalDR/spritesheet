@@ -1,63 +1,64 @@
 const docs = {
   options: {
-    "width": {
-      description: "Width of the output spritesheet. If undefined, calculated automatically",
+    width: {
+      description:
+        'Width of the output spritesheet. If undefined, calculated automatically',
       type: 'number',
       default: 'auto',
       alias: '--w',
-      multiple: false
+      multiple: false,
     },
 
-    "height": {
-      description: "Height of the output spritesheet. If undefined, equal to width",
+    height: {
+      description:
+        'Height of the output spritesheet. If undefined, equal to width',
       type: 'number',
       default: 'auto',
       alias: '--h',
-      multiple: false
+      multiple: false,
     },
 
-    "chunk.width": {
+    'chunk.width': {
       description: `Width of a chunk. If undefined, calculated to fit in spritesheet dimensions`,
-      type: 'number', 
+      type: 'number',
       default: 'auto',
       alias: '--c.w',
-      multiple: false
+      multiple: false,
     },
 
-    "chunk.height": {
+    'chunk.height': {
       description: `Represent the height of a chunk. See "chunk.width" behavior`,
-      type: 'number', 
+      type: 'number',
       default: 'auto',
       alias: '--c.h',
-      multiple: false
+      multiple: false,
     },
 
-    "flexibility": {
+    flexibility: {
       description: `Intensity of resizing to fit inside spritesheet dimensions. Between 0 (no resize) and 1 (full resize).`,
-      type: 'number', 
+      type: 'number',
       default: 1,
       alias: '',
-      multiple: false
+      multiple: false,
     },
 
-    "input": {
+    input: {
       description: `The path to the folder where image sequence is stored`,
-      type: 'string', 
+      type: 'string',
       default: null,
       alias: '',
-      multiple: true
+      multiple: true,
     },
 
-    "output": {
+    output: {
       description: `The path to the folder where spritesheet will be created`,
-      type: 'string', 
+      type: 'string',
       default: null,
       alias: '',
-      multiple: false
-    }
-  }  
+      multiple: false,
+    },
+  },
 }
-
 
 export default docs
 export const helpCommand = () => {

@@ -66,7 +66,3 @@ config.input.forEach(dirPath => {
   const endAt = Date.now()
   actionLog('Time', (endAt - startAt) / 1000 + 's')
 })()
-
-
-
-

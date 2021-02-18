@@ -5,6 +5,11 @@
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
   "browser": "dist/index.umd.js",
+  "author": { 
+    "name" : "Solal Dussout-Revel",
+    "email" : "hello@solaldussout-revel.dev",
+    "url" : "https://solaldussout-revel.dev"
+  },
   "bin": {
     "spritesheet": "./dist/cli.js"
   },

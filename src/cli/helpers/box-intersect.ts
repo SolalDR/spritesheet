@@ -1,8 +1,8 @@
 interface Box {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
+  x: number
+  y: number
+  w: number
+  h: number
 }
 
 /**
@@ -14,6 +14,10 @@ export const doBoxesIntersect = (a: Box, b: Box) => {
   const maxA = [a.x + a.w, a.y + a.h]
   const maxB = [b.x + b.w, b.y + b.h]
 
-  return maxA[0] <= minB[0] || minA[0] >= maxB[0] 
-  || maxA[1] <= minB[1] || minA[1] >= maxB[1] ? false : true
+  return maxA[0] <= minB[0] ||
+    minA[0] >= maxB[0] ||
+    maxA[1] <= minB[1] ||
+    minA[1] >= maxB[1]
+    ? false
+    : true
 }
