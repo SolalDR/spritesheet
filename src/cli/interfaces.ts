@@ -1,5 +1,3 @@
-import { ImageSet } from './image-set'
-
 export interface ChunkOptions {
   width: number | null
   height: number | null
@@ -8,7 +6,8 @@ export interface ChunkOptions {
 export interface CLIChunkConfig {
   width: number | null
   height: number | null
-  resize: number | null
+  flexibility: number
+  dimensionsForced: boolean
   [key: string]: any
 }
 
@@ -20,5 +19,12 @@ export interface CLISpritesheetConfig {
 
 export interface CLIOutputConfig {
   name: string
-  dir: string
+  path: string
+}
+
+export interface Config {
+  chunk: CLIChunkConfig
+  spritesheet: CLISpritesheetConfig
+  output: CLIOutputConfig
+  input: string[]
 }

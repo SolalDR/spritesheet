@@ -1,63 +1,61 @@
+import fsBase from 'fs'
 import { ImageSet, ImageSetOptions } from './image-set'
-import { CLIChunkConfig, CLIOutputConfig } from './interfaces'
-import { actionLog, errorLog, successLog, warningLog } from './log'
+import { Config } from './interfaces'
+import { actionLog, errorLog, successLog, warningLog } from './helpers/log'
+import { doBoxesIntersect } from './helpers/box-intersect'
+import { tickProgress, updateMessage } from './helpers/progress'
 
 // eslint-disable-next-line
 const sharp = require('sharp')
-// eslint-disable-next-line
-const fs = require('fs').promises
+const fs = fsBase.promises
 
 export interface GeneratorOptions {
-  width: number
-  height: number
-  output: CLIOutputConfig
+  options: Config,
   imageSets: ImageSet[] | ImageSetOptions[]
-  chunkConfig: CLIChunkConfig
 }
 
 export class Generator {
   imageSets: ImageSet[] = []
-  width: number
-  height: number
-  output: CLIOutputConfig
-  chunkConfig: CLIChunkConfig
+  options: Config
+
   constructor({
-    width,
-    height,
-    output,
+    options,
     imageSets,
-    chunkConfig,
   }: GeneratorOptions) {
-    this.width = width
-    this.height = height
-    this.chunkConfig = chunkConfig
+    this.options = options
     this.imageSets = (imageSets as any[]).map(
       (set): ImageSet =>
         (set instanceof ImageSet ? set : new ImageSet(set)) as ImageSet,
     )
-    this.output = output
   }
 
   get name(): string {
-    return this.output.name
+    return this.options.output.name
   }
 
   get directory(): string {
-    return this.output.dir.slice(-1) !== '/'
-      ? this.output.dir + '/'
-      : this.output.dir
+    return this.options.output.path.slice(-1) !== '/'
+      ? this.options.output.path + '/'
+      : this.options.output.path
   }
 
+  /**
+   * Process a grid based on certain parameter, this methods is perform many times to find the most optimized grid
+   */
   processGrid({
-    width = this.width,
-    height = this.height,
+    grid = null,
+    width = this.options.spritesheet.width,
+    height = this.options.spritesheet.height,
     imageSet = null,
     loss = 0,
   }) {
-    if (!imageSet) return null
+    if (!imageSet || !grid) return null
+    
     const images = imageSet.images
-    let anchorPoints = [{ x: 0, y: 0 }]
-    const chunks = []
+    const chunks = [...grid.chunks]
+    const setsChunks = []
+    let anchorPoints = [...grid.anchorPoints]
+    
 
     const computeTotalPixelUse = () => {
       return chunks.reduce((acc, value) => acc + value.width * value.height, 0)
@@ -98,13 +96,24 @@ export class Generator {
       filterAnchorPoints()
 
       // Filter for anchor points inside boundaries
-      const possibleAnchorPoints = anchorPoints.filter(
+      let possibleAnchorPoints = anchorPoints.filter(
         point =>
           point.x + image.width < width && point.y + image.height < height,
       )
+
+      // Filter for anchor points with box intersections issues
+      possibleAnchorPoints = possibleAnchorPoints.filter(point => {
+        return !chunks.find((c) => {
+          const box1 = { x: c.coords.x, y: c.coords.y, w: c.width, h: c.height };
+          const box2 = { x: point.x, y: point.y, w: image.width, h: image.height };
+          return doBoxesIntersect(box1, box2);
+        })
+      })
+
       if (possibleAnchorPoints.length === 0)
         throw new Error('Cannot find space for image')
 
+      // Get closest anchorPoint of top left corner
       const anchorPoint = possibleAnchorPoints.reduce(
         (acc: any, value: any) => {
           const farestCurrentValue = Math.max(
@@ -128,8 +137,9 @@ export class Generator {
         const index = anchorPoints.findIndex(point => {
           return point.x === anchorPoint.x && point.y === anchorPoint.y
         })
-
         anchorPoints.splice(index, 1)
+
+        // add new anchors points on top right and bottom left corner
         anchorPoints.push(
           { x: anchorPoint.x + image.width, y: anchorPoint.y },
           { x: anchorPoint.x, y: anchorPoint.y + image.height },
@@ -140,78 +150,116 @@ export class Generator {
       throw new Error('Cannot find space for image')
     }
 
-    images.forEach((image, i) => {
+    // Compute dimensions for each chunk
+    const chunksDefinitions = images.map((image, i) => {
       const ratio = image.width / image.height
-      const width = ~~((imageSet.chunk.width || image.width) * (1 - loss))
+      const width = ~~((this.options.chunk.width || image.width) * (1 - loss))
       const height = ~~(width / ratio)
 
-      // console.log(image.chunk.width)
+      return { image, height, width, ratio, rank: i }
+    })
 
-      const coords = attributeLocation({ width, height })
-      chunks.push({
-        image,
-        height,
-        width,
-        ratio,
-        coords,
-      })
+    // Sort chunks
+    chunksDefinitions.sort((a, b) => {
+      return b.width * b.height - a.width * a.height
+    })
+
+    // Attrib location
+    chunksDefinitions.forEach((chunkDefinition) => {
+      const coords = attributeLocation(chunkDefinition)
+      const chunk = {
+        ...chunkDefinition,
+        coords
+      }
+      chunks.push(chunk)
+      setsChunks.push(chunk)
     })
 
     return {
       chunks,
+      anchorPoints,
+      width,
+      height,
       totalPixel: computeTotalPixelUse(),
       boundaries: computeBoundaries(),
       loss: 1 - computeTotalPixelUse() / (width * height),
+      sets: [...grid.sets, {
+        chunks: setsChunks
+      }]
     }
   }
 
-  get resizeFactor() {
-    if (this.chunkConfig.width || this.chunkConfig.height) {
-      return this.chunkConfig.resize || 0
-    }
-    return this.chunkConfig.resize || 1
-  }
+  /**
+   * Compute a grid for a given image set
+   */
+  computeGrid(set, grid, index, displayError = true) {
+    const { width, height } = this.options.spritesheet
+    let newGrid = null;
 
-  computeGrid() {
-    let grid = null
+
     try {
       const g = this.processGrid({
-        width: this.width,
-        height: this.height,
+        grid,
+        width,
+        height,
         loss: 0,
-        imageSet: this.imageSets[0],
+        imageSet: set,
       })
-      if (g) grid = g
-    } catch (err) {}
-
-    const resize = this.resizeFactor
-    for (let i = -resize; i < resize; i += 0.01) {
-      try {
-        const g = this.processGrid({
-          width: this.width,
-          height: this.height,
-          loss: i,
-          imageSet: this.imageSets[0],
-        })
-        if (g) {
-          if (!grid || grid.loss > g.loss) grid = g
-        }
-      } catch (err) {}
+      if (g) newGrid = g
+    } catch (err) {
+      if (displayError) {
+        errorLog("Compute grid", err)
+      }
     }
 
-    return grid
+    const flexibility = this.options.chunk.flexibility
+    const total = flexibility * this.imageSets.length
+    const base = index * flexibility
+
+    for (let i = 0; i < flexibility; i += 0.01) {
+      try {
+        updateMessage(~~(((i+base)/total)*100) + '%')
+        tickProgress()
+        const g = this.processGrid({
+          grid,
+          width,
+          height,
+          loss: i,
+          imageSet: set,
+        })
+        
+        if (g) {
+          if (!newGrid || newGrid.loss > g.loss) newGrid = g
+        }
+      } catch (err) {
+        if (displayError) {
+          errorLog("Compute grid", err)
+        }
+      }
+    }
+
+    return newGrid
   }
 
   async generateMetadata(grid) {
-    const datas = grid.chunks.map(({ width, height, coords }, index) => {
-      return {
-        width,
-        height,
-        top: coords.y,
-        left: coords.x,
-        rank: index,
-      }
-    })
+
+    const datas = {
+      width: grid.width,
+      height: grid.height,
+      count: grid.chunks.length,
+      boundaries: grid.boundaries,
+      sets: grid.sets.map(set => {
+        return set.chunks.map(({ width, height, coords, rank }) => {
+          return {
+            width,
+            height,
+            rank,
+            top: coords.y,
+            left: coords.x,
+          }
+        }).sort((a, b) => a.rank - b.rank)
+      })
+    }
 
     const stringData = JSON.stringify(datas)
     await fs.writeFile(`${this.directory}${this.name}.json`, stringData)
@@ -231,51 +279,60 @@ export class Generator {
       }),
     )
 
-    try {
-      sharp({
-        create: {
-          width: this.width,
-          height: this.height,
-          channels: 4,
-          background: { r: 0, g: 0, b: 0, alpha: 0 },
-        },
-      })
-        .composite(composites)
-        .sharpen()
-        .withMetadata()
-        .png({ quality: 90 })
-        .toFile(`${this.directory}${this.name}.png`, err => {
-          if (err) {
-            errorLog('File generation', err)
-          } else {
-            successLog(
-              'Files generated successfully',
-              '',
-              `- ${this.name}.png\n- ${this.name}.json`,
-            )
-          }
+    return new Promise((resolve, reject) => {
+      try {
+        sharp({
+          create: {
+            width: grid.width,
+            height: grid.height,
+            channels: 4,
+            background: { r: 0, g: 0, b: 0, alpha: 0 },
+          },
         })
-    } catch (err) {
-      console.log(err)
-    }
+          .composite(composites)
+          .sharpen()
+          .withMetadata()
+          .png({ quality: 90 })
+          .toFile(`${this.directory}${this.name}.png`, err => {
+            if (err) {
+              errorLog('File generation', err)
+              reject()
+            } else {
+              successLog(
+                'Files generated successfully',
+                '',
+                `- ${this.name}.png\n- ${this.name}.json`,
+              )
+              resolve(this.name)
+            }
+          })
+      } catch (err) {
+        console.log(err)
+      }
+    })
   }
 
   get chunkSize() {
+    const cc = this.options.chunk
     let size = ''
-    size += this.chunkConfig.width ? `${this.chunkConfig.width}x` : `?x`
-    size += this.chunkConfig.height ? `${this.chunkConfig.height}` : `?`
+    size += cc.width ? `${cc.width}x` : `?x`
+    size += cc.height ? `${cc.height}` : `?`
     if (size === '?x?') return 'auto'
     return size
   }
 
-  get chunkResize() {
-    if (this.chunkSize === 'auto' && !this.chunkConfig.resize) return 'auto'
-    return this.chunkConfig.resize
-      ? this.chunkConfig.resize * 100 + '%'
+  get chunkflexibility() {
+    const cc = this.options.chunk
+    if (this.chunkSize === 'auto' && !cc.flexibility) return 'auto'
+    return cc.flexibility
+      ? cc.flexibility * 100 + '%'
       : 'none'
   }
 
   async run() {
+    const sc = this.options.spritesheet
+    const cc = this.options.chunk
+
     await Promise.all(this.imageSets.map(set => set.load())).catch(err => {
       errorLog('Loading', '', err)
       process.exit()
@@ -284,15 +341,40 @@ export class Generator {
     actionLog(
       'Grid will be generated ',
       '',
-      `- spritesheet dimension: ${this.width}x${this.height}px\n` +
+      `- spritesheet dimension: ${sc.width}x${sc.height}px\n` +
         `- chunk size: ${this.chunkSize}\n` +
-        `- resize: ${
-          this.chunkConfig.resize ? this.chunkConfig.resize * 100 + '%' : 'auto'
+        `- flexibility: ${
+          cc.flexibility ? cc.flexibility * 100 + '%' : 'auto'
         }\n` +
         `- output path : ${this.directory}${this.name}.(png|json)\n`,
     )
 
-    const grid = this.computeGrid()
+    let grid = {
+      chunks: [],
+      anchorPoints: [{x: 0, y: 0}],
+      width: sc.width,
+      height: sc.height,
+      totalPixel: 0,
+      loss: 0,
+      boundaries: {x: 0, y: 0},
+      sets: []
+    }
+    console.log('Find best match')
+    for (let i = 0; i < this.imageSets.length; i++) {
+      grid = this.computeGrid(this.imageSets[i], grid, i)
+    }
+
+    if (!this.options.spritesheet.dimensionsForced) {
+      while (grid.width / 2 > grid.boundaries.x && grid.height / 2 > grid.boundaries.y ) {
+        grid.width = grid.width/2
+        grid.height = grid.height/2
+      }
+    }
+
+    console.log()
+
+    delete grid.anchorPoints
+
     if (!grid) {
       errorLog('Cannot generate grid', 'Unknown error')
       process.exit()
@@ -306,8 +388,8 @@ export class Generator {
       }, ${grid.boundaries.y}]\n- Number of items : ${grid.chunks.length}`,
     )
     if (
-      grid.boundaries.x < this.width * 0.75 &&
-      grid.boundaries.y < this.height * 0.75
+      grid.boundaries.x < grid.width * 0.75 &&
+      grid.boundaries.y < grid.height * 0.75
     ) {
       warningLog(
         'Generation',
@@ -338,7 +420,7 @@ export class Generator {
 // Feature CLI generate
 
 // - open a list of image
-// - crop / resize these image
+// - crop / flexibility these image
 
 // - generate a map from a liste of image
 //   - before
@@ -358,3 +440,5 @@ export class Generator {
 // // Feature interpretor
 
 // - return a chunk based on rank
+
+

@@ -1,4 +1,3 @@
-import { ChunkOptions } from './interfaces'
 
 // eslint-disable-next-line
 const sharp = require('sharp')
@@ -6,7 +5,6 @@ const sharp = require('sharp')
 export interface ImageSetOptions {
   baseUrl?: string
   paths?: Array<string>
-  chunk: ChunkOptions
 }
 
 export enum ImageSetStatus {
@@ -30,13 +28,11 @@ export class ImageSet {
   baseUrl: string
   paths: string[]
   images: ImageData[]
-  chunk: ChunkOptions
   status: ImageSetStatus = ImageSetStatus.PENDING
 
-  constructor({ baseUrl, paths, chunk }: ImageSetOptions) {
+  constructor({ baseUrl, paths }: ImageSetOptions) {
     this.baseUrl = baseUrl
     this.paths = paths
-    this.chunk = chunk
     this.images = []
   }
 
